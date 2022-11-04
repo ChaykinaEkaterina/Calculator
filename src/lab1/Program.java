@@ -10,18 +10,20 @@ public class Program {
 	static Map<String, Integer> operations = new HashMap<String, Integer>();
 
 	/*
-	 * TODO: 1. add recursive toPostfix for a and b in log(a,b) 
+	 * TODO: 1. separate a and b in log(a,b) - comma search 
 	 */
 	private static boolean checkExpr(String expr) {
 		int i = 0;
 		int numOfOpBrackets = 0;
 
 		int numOfDots = 0;
+		expr = expr.replaceAll("\\s+","");
+		
 		while (i < expr.length()) {
 
 			char c = expr.charAt(i);
 
-			if (!Character.isDigit(c) && !operations.containsKey(c+"") && c != '(' && c != ')' && c != '.'
+			if (!Character.isDigit(c) && !operations.containsKey(c+"") && c != ')' && c != '.'
 					&& expr.indexOf("log(") != i) {
 				System.out.println("Incorrect expression: invalid symbol " + c);
 				return false;
@@ -41,7 +43,7 @@ public class Program {
 			else if (c == ')') {
 				numOfDots = 0;
 				if (numOfOpBrackets == 0) {
-					System.out.println("Incorrect expression: brackets in line "+ expr);
+					System.out.println("Incorrect expression: mismatching number of brackets "+ expr);
 					return false;
 				}
 				numOfOpBrackets--;
@@ -70,18 +72,22 @@ public class Program {
 
 			else if (expr.indexOf("log(") == i) {
 				numOfDots = 0;
-				if (expr.indexOf(')', i) == -1) {
-					System.out.println("Incorrect log function: no closing bracket");
-					return false;
-				}
+				//if (expr.indexOf(')', i) == -1) {
+				//	System.out.println("Incorrect log function: no closing bracket");
+				//	return false;
+				//}
 				
 				int numOfLogBrackets = 1;
 				int itemp = i + 5;
 				int endOfLog = 0;
+				int commaIndex = 0;
 				
 				while (numOfLogBrackets !=0 && itemp < expr.length()) {
 					if (expr.charAt(itemp) == '(') numOfLogBrackets++;
 					else if (expr.charAt(itemp) == ')') numOfLogBrackets--;
+					
+					if (expr.charAt(itemp) == ',' && numOfLogBrackets == 1)
+						commaIndex = itemp;
 					
 					itemp++;
 				}
@@ -92,20 +98,23 @@ public class Program {
 					return false;
 				}
 				
-				if (expr.indexOf(',', i) == -1 || expr.indexOf(',', i) >= endOfLog) {
+				if (commaIndex == 0) {
 					System.out.println("Incorrect log function: no comma found in brackets");
 					return false;
 				}
 				
+				//if (expr.indexOf(',', i) == -1 || expr.indexOf(',', i) >= endOfLog) {
+				//	System.out.println("Incorrect log function: no comma found in brackets");
+				//	return false;
+				//}
+				
 
-
-				String firstOp = expr.substring(i + 4, expr.indexOf(','));
-				String secondOp = expr.substring(expr.indexOf(',') + 1, endOfLog);
+				String firstOp = expr.substring(i + 4, commaIndex);
+				String secondOp = expr.substring(commaIndex + 1, endOfLog);
 
 				System.out.println("First " + firstOp + "; Second " + secondOp);
 
 				if (!checkExpr(firstOp) || !checkExpr(secondOp)) return false;
-				//checkExpr(secondOp);
 				i = endOfLog;
 
 			}
@@ -114,7 +123,7 @@ public class Program {
 		}
 
 		if (numOfOpBrackets > 0) {
-			System.out.println("Incorrect expression: brackets");
+			System.out.println("Incorrect expression: mismatching number of brackets");
 			return false;
 		}
 		return true;
@@ -205,18 +214,25 @@ public class Program {
 				int numOfBrackets = 1;
 				int itemp = i + 5;
 				int endOfLog = 0;
+				int commaIndex = 0;
 				
 				while (numOfBrackets !=0 && itemp < line.length()) {
 					if (line.charAt(itemp) == '(') numOfBrackets++;
 					else if (line.charAt(itemp) == ')') numOfBrackets--;
+					if (line.charAt(itemp) == ',' && numOfBrackets == 1)
+						commaIndex = itemp;
 					
 					itemp++;
 				}
 				
+				
+				
 				if (numOfBrackets == 0) endOfLog = itemp - 1;
 				
-				String firstOp = line.substring(i + 4, line.indexOf(',', i + 4));
-				String secondOp = line.substring(line.indexOf(',', i + 4) + 1, endOfLog);
+				
+				
+				String firstOp = line.substring(i + 4, commaIndex);
+				String secondOp = line.substring(commaIndex + 1, endOfLog);
 				
 				postfix.push(calcPostfix(toPostfix(firstOp))+"");
 				postfix.push(calcPostfix(toPostfix(secondOp))+"");
