@@ -74,10 +74,6 @@ public class Program {
 					System.out.println("Incorrect log function: no closing bracket");
 					return false;
 				}
-				if (expr.indexOf(',', i) == -1 || expr.indexOf(',', i) >= expr.indexOf(')', i)) {
-					System.out.println("Incorrect log function: no comma found in brackets");
-					return false;
-				}
 				
 				int numOfLogBrackets = 1;
 				int itemp = i + 5;
@@ -95,6 +91,13 @@ public class Program {
 					System.out.println("Incorrect log function: no closing bracket");
 					return false;
 				}
+				
+				if (expr.indexOf(',', i) == -1 || expr.indexOf(',', i) >= endOfLog) {
+					System.out.println("Incorrect log function: no comma found in brackets");
+					return false;
+				}
+				
+
 
 				String firstOp = expr.substring(i + 4, expr.indexOf(','));
 				String secondOp = expr.substring(expr.indexOf(',') + 1, endOfLog);
@@ -221,16 +224,12 @@ public class Program {
 				//System.out.println("First " + calcPostfix(toPostfix(firstOp)) + "; Second " + calcPostfix(toPostfix(secondOp)));
 				
 				
-				
-				//toPostfix(firstOp);
-				//toPostfix(secondOp);
-				
 				while (stack.size() > 0 && operations.get(stack.peek()) >= operations.get("log"))
 					postfix.push(String.valueOf(stack.pop()));
 
 				stack.push("log");
 				
-				i = line.indexOf(')');
+				i = endOfLog;
 
 			}
 			
