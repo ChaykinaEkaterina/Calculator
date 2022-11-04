@@ -7,164 +7,293 @@ import java.util.Stack;
 
 public class Program {
 
-	static Map<Character, Integer> operations = new HashMap<Character, Integer>();
-	
-	private static boolean checkExpr(String expr)
-	{
-		
-		return false;
+	static Map<String, Integer> operations = new HashMap<String, Integer>();
+
+	/*
+	 * TODO: 1. add recursive toPostfix for a and b in log(a,b) 
+	 */
+	private static boolean checkExpr(String expr) {
+		int i = 0;
+		int numOfOpBrackets = 0;
+
+		int numOfDots = 0;
+		while (i < expr.length()) {
+
+			char c = expr.charAt(i);
+
+			if (!Character.isDigit(c) && !operations.containsKey(c+"") && c != '(' && c != ')' && c != '.'
+					&& expr.indexOf("log(") != i) {
+				System.out.println("Incorrect expression: invalid symbol " + c);
+				return false;
+			}
+
+			if (c == '(') {
+				numOfDots = 0;
+				if (!isNumeric(expr.charAt(i + 1) + "") && expr.charAt(i + 1) != '.' && expr.charAt(i + 1) != '('
+						&& expr.charAt(i + 1) != 'l') {
+					System.out.println(
+							"Incorrect expression: no digit found after opening bracket " + expr.charAt(i + 1));
+					return false;
+				}
+				numOfOpBrackets++;
+			}
+
+			else if (c == ')') {
+				numOfDots = 0;
+				if (numOfOpBrackets == 0) {
+					System.out.println("Incorrect expression: brackets in line "+ expr);
+					return false;
+				}
+				numOfOpBrackets--;
+			}
+
+			else if (operations.containsKey(c+"")) {
+				numOfDots = 0;
+				if ((!isNumeric(expr.charAt(i - 1) + "") && expr.charAt(i - 1) != ')' && expr.charAt(i - 1) != '.')
+						|| (!isNumeric(expr.charAt(i + 1) + "") && expr.charAt(i + 1) != '('
+								&& expr.charAt(i + 1) != '.') && expr.charAt(i + 1) != 'l') {
+					System.out.println("Incorrect expression: no operands matching operation");
+					return false;
+				}
+			}
+
+			else if (Character.isDigit(c) || c == '.') {
+
+				if (c == '.')
+					numOfDots++;
+				if (numOfDots > 1) {
+					System.out.println("Incorrect expression: too many dots");
+					return false;
+				}
+
+			}
+
+			else if (expr.indexOf("log(") == i) {
+				numOfDots = 0;
+				if (expr.indexOf(')', i) == -1) {
+					System.out.println("Incorrect log function: no closing bracket");
+					return false;
+				}
+				if (expr.indexOf(',', i) == -1 || expr.indexOf(',', i) >= expr.indexOf(')', i)) {
+					System.out.println("Incorrect log function: no comma found in brackets");
+					return false;
+				}
+				
+				int numOfLogBrackets = 1;
+				int itemp = i + 5;
+				int endOfLog = 0;
+				
+				while (numOfLogBrackets !=0 && itemp < expr.length()) {
+					if (expr.charAt(itemp) == '(') numOfLogBrackets++;
+					else if (expr.charAt(itemp) == ')') numOfLogBrackets--;
+					
+					itemp++;
+				}
+				
+				if (numOfLogBrackets == 0) endOfLog = itemp - 1;
+				else {
+					System.out.println("Incorrect log function: no closing bracket");
+					return false;
+				}
+
+				String firstOp = expr.substring(i + 4, expr.indexOf(','));
+				String secondOp = expr.substring(expr.indexOf(',') + 1, endOfLog);
+
+				System.out.println("First " + firstOp + "; Second " + secondOp);
+
+				if (!checkExpr(firstOp) || !checkExpr(secondOp)) return false;
+				//checkExpr(secondOp);
+				i = endOfLog;
+
+			}
+
+			i++;
+		}
+
+		if (numOfOpBrackets > 0) {
+			System.out.println("Incorrect expression: brackets");
+			return false;
+		}
+		return true;
 	}
-	
+
 	private static Stack<String> reverseStack(Stack<String> stack) {
 		Stack<String> result = new Stack<>();
-		while (stack.size()>0) result.push(stack.pop());
+		while (stack.size() > 0)
+			result.push(stack.pop());
 		return result;
 	}
-	
-	public static boolean isNumeric(String str) { 
-		  try {  
-		    Double.parseDouble(str);  
-		    return true;
-		  } catch(NumberFormatException e){  
-		    return false;  
-		  }  
+
+	public static boolean isNumeric(String str) {
+		try {
+			Double.parseDouble(str);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
 		}
-	
-	private static char[] splitExpression(String line) {
-		char[] chars = line.toCharArray();
-		return chars;
 	}
-	
-	private static double calc(char operation, double operand1, double operand2) {
-		
+
+
+	private static Double calc(String operation, double operand1, double operand2) {
+
 		double ans;
-		switch (operation) {
-		case '+':
+		if (operation.equals("+"))
 			ans = operand1 + operand2;
-			break;
-		case '-':
+		else if (operation.equals("-"))
 			ans = operand1 - operand2;
-			break;
-		case '*':
+		else if (operation.equals("*"))
 			ans = operand1 * operand2;
-			break;
-		case '/':
+		else if (operation.equals("/"))
 			ans = operand1 / operand2;
-			break;
-		case '^':
+		else if (operation.equals("^"))
 			ans = Math.pow(operand1, operand2);
-			break;
-		default:
-			ans = 0;
-	}
+		else if (operation.equals("log"))
+			ans = Math.log(operand1) / Math.log(operand2);
+		else
+			return null;
 		return ans;
 	}
-	
-	
-	private static Stack<String> toPostfix(char[] expr) {
-		Stack<Character> stack = new Stack<>();
+
+	private static Stack<String> toPostfix(String line) {
+		Stack<String> stack = new Stack<>();
 		Stack<String> postfix = new Stack<>();
 		
+		char[] expr = line.toCharArray();
+
 		for (int i = 0; i < expr.length; i++) {
 			char c = expr[i];
-			
-			if (Character.isDigit(c)||c=='.') {
+			if (Character.isDigit(c) || c == '.') {
 				String num = "";
-				while (i<expr.length && !operations.containsKey(expr[i])) {
-					if (isNumeric(String.valueOf(expr[i]))|| expr[i]=='.') {
-						num+=expr[i];
+				while (i < expr.length && !operations.containsKey(expr[i]+"") && expr[i] != ')' && expr[i] != 'l') {
+					if (isNumeric(String.valueOf(expr[i])) || expr[i] == '.') {
+						num += expr[i];
 						i++;
-					}
-					else {
-						System.out.println("Expression must only contain real numbers, arithmetic operations and brackets: "+c);
-					    return null;
 					}
 				}
 				i--;
-				//insert into output expression
+				// insert into output expression
+				
 				postfix.push(num);
 			}
-			
+
 			else if (c == '(') {
-				//push into stack
-				stack.push(c);
-				postfix.push(String.valueOf(c));
+				// push into stack
+				stack.push(c+"");
 			}
-			
-			else if (c==')') {
-				//insert into output expression everything before '('
-				while (stack.size()>0 && stack.peek()!='(') 
+
+			else if (c == ')') {
+				// insert into output expression everything before '('
+				while (stack.size() > 0 && !stack.peek().equals("("))
 					postfix.push(String.valueOf(stack.pop()));
-				
 				stack.pop();
 			}
-			
-			else if (operations.containsKey(c)) {
-				while (stack.size()>0 && operations.get(stack.peek()) >= operations.get(c))
+
+
+			else if (operations.containsKey(c+"")) {
+				while (stack.size() > 0 && operations.get(stack.peek()) >= operations.get(c+""))
 					postfix.push(String.valueOf(stack.pop()));
+
+				stack.push(c+"");
+			}
+			
+
+			else if (c == 'l') {
 				
-				stack.push(c);
+				int numOfBrackets = 1;
+				int itemp = i + 5;
+				int endOfLog = 0;
+				
+				while (numOfBrackets !=0 && itemp < line.length()) {
+					if (line.charAt(itemp) == '(') numOfBrackets++;
+					else if (line.charAt(itemp) == ')') numOfBrackets--;
+					
+					itemp++;
+				}
+				
+				if (numOfBrackets == 0) endOfLog = itemp - 1;
+				
+				String firstOp = line.substring(i + 4, line.indexOf(',', i + 4));
+				String secondOp = line.substring(line.indexOf(',', i + 4) + 1, endOfLog);
+				
+				postfix.push(calcPostfix(toPostfix(firstOp))+"");
+				postfix.push(calcPostfix(toPostfix(secondOp))+"");
+
+				//System.out.println("First " + calcPostfix(toPostfix(firstOp)) + "; Second " + calcPostfix(toPostfix(secondOp)));
+				
+				
+				
+				//toPostfix(firstOp);
+				//toPostfix(secondOp);
+				
+				while (stack.size() > 0 && operations.get(stack.peek()) >= operations.get("log"))
+					postfix.push(String.valueOf(stack.pop()));
+
+				stack.push("log");
+				
+				i = line.indexOf(')');
+
 			}
-			else {
-				System.out.println("Expression must only contain real numbers, arithmetic operations and brackets: "+ c);
-			    return null;
-			}
+			
+			//System.out.println(stack);
 		}
-		
-		while (stack.size()>0) 				
+
+		while (stack.size() > 0)
 			postfix.push(String.valueOf(stack.pop()));
-		
+
 		return postfix;
 	}
-	
-	
+
 	private static double calcPostfix(Stack<String> postfix) {
 		Stack<Double> operands = new Stack<>();
 		int counter = 0;
-		
+
 		postfix = reverseStack(postfix);
-		while (postfix.size()>0)
-		{
-			String c = postfix.pop();
+		while (postfix.size() > 0) {
 			
-			//push number into stack
+			//System.out.println(operands);
+			String c = postfix.pop();
+
+			// push number into stack
 			if (isNumeric(c)) {
 				operands.push(Double.parseDouble(c));
 			}
-			
-			//take 2 last numbers from stack 
-			else if (operations.containsKey(c.charAt(0))) {
-				double second = operands.size()>0? operands.pop() : 0;
-				double first = operands.size()>0? operands.pop() : 0;
-				
-				operands.push(calc(c.charAt(0),first, second));
+
+			// take 2 last numbers from stack
+			else if (operations.containsKey(c)) {
+				double second = operands.size() > 0 ? operands.pop() : 0;
+				double first = operands.size() > 0 ? operands.pop() : 0;
+
+				operands.push(calc(c, first, second));
 				counter++;
-				System.out.println(counter+ "." + first+ " "+ c +" "+ second + " = " + operands.peek());
+				
+				if (c.equals("log")) System.out.println(counter + ". log(" + first + ", " + second + ") = " + operands.peek());
+				else System.out.println(counter + ". " + first + " " + c + " " + second + " = " + operands.peek());
 			}
 		}
 		return operands.pop();
 	}
-	
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 
-		operations.put('(', 0);
-		operations.put('+', 1);
-		operations.put('-', 1);
-		operations.put('*', 2);
-		operations.put('/', 2);
-		operations.put('^', 3);
-		
-		
+	public static void main(String[] args) {
+
+		operations.put("(", 0);
+		operations.put("+", 1);
+		operations.put("-", 1);
+		operations.put("*", 2);
+		operations.put("/", 2);
+		operations.put("^", 3);
+		operations.put("log", 4);
+
 		System.out.println("Enter an expression");
 		Scanner sc = new Scanner(System.in);
 		String expr = sc.nextLine();
-		
-		Stack<String> postfix = toPostfix(splitExpression(expr));
-		if (postfix!=null)
-		{
-		System.out.println("Postfix form: " + postfix);
-		System.out.println("Calculated answer:" + calcPostfix(postfix));
+
+		if (checkExpr(expr)) {
+
+			Stack<String> postfix = toPostfix(expr);
+			if (postfix != null) {
+				System.out.println("Postfix form: " + postfix);
+				System.out.println("Calculated answer:" + calcPostfix(postfix));
+			}
 		}
 		sc.close();
 	}
